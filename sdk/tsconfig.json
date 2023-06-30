@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
+    "lib": [
+      "esnext"
+    ],
+    "module": "commonjs",
+    "target": "esnext",
+    "removeComments": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "outDir": "build"
+  }
+}

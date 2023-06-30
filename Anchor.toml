@@ -2,14 +2,19 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-cushion = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+cushion = "HPHzFCqjZoCrn8CrnBAu8n2tcTgYCW71fWSXQGwe4XtY"
 
 [registry]
 url = "https://api.apr.dev"
 
+[test.validator]
+url = "https://api.mainnet-beta.solana.com"
+[[test.validator.clone]] # Pyth SOL/USD feed
+address = "H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG"
+
 [provider]
 cluster = "Localnet"
-wallet = "/home/julien/.config/solana/id.json"
+wallet = "./id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
