@@ -7,6 +7,7 @@ pub fn initialize_llamma(ctx: Context<InitializeLlamma>) -> Result<()> {
     msg!("Initializing LLAMMA");
 
     let llamma = &mut ctx.accounts.llamma;
+    llamma.admin = ctx.accounts.admin.key();
     llamma.stablecoin = ctx.accounts.stablecoin.key();
 
     Ok(())
@@ -14,6 +15,9 @@ pub fn initialize_llamma(ctx: Context<InitializeLlamma>) -> Result<()> {
 
 #[derive(Accounts)]
 pub struct InitializeLlamma<'info> {
+    /// CHECK: Read-only admin
+    pub admin: AccountInfo<'info>,
+
     #[account(
         init,
         payer = payer,
@@ -25,6 +29,7 @@ pub struct InitializeLlamma<'info> {
     )]
     pub llamma: Account<'info, Llamma>,
 
+    /// CHECK: A read-only seeded authority
     #[account(
         mut,
         seeds = [

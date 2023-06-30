@@ -19,3 +19,5 @@ default = []
 anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
 anchor-spl = { version = "0.26.0" }
 pyth-sdk-solana = "0.7.2"
+winnow = "=0.4.1"
+toml_datetime = "=0.6.1"

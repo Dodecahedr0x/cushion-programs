@@ -2,7 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-cushion = "HPHzFCqjZoCrn8CrnBAu8n2tcTgYCW71fWSXQGwe4XtY"
+cushion = "2rYUpCQGEqxz8WesY44kkXm1JvtWairzVJLjhf2UpynL"
 
 [registry]
 url = "https://api.apr.dev"
