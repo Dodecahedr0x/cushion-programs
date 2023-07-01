@@ -6,12 +6,14 @@ import { Cushion } from "../target/types/cushion";
 import { FEEDS } from "../sdk/src";
 import { generateSeededKeypair } from "./utils";
 import {
+  getBandKey,
   getLlammaAuthorityKey,
   getLlammaKey,
   getMarketKey,
 } from "../sdk/src/pdas";
 import {
   createMint,
+  getAssociatedTokenAddressSync,
   getOrCreateAssociatedTokenAccount,
   mintToChecked,
 } from "@solana/spl-token";
@@ -25,7 +27,7 @@ describe(suiteName, () => {
 
   const program = anchor.workspace.Cushion as Program<Cushion>;
   let users: Keypair[];
-  let collateral = generateSeededKeypair(`${suiteName}+collateral`);
+  let collateralMintKeypair = generateSeededKeypair(`${suiteName}+collateral`);
 
   before(async () => {
     users = await Promise.all(
@@ -49,19 +51,19 @@ describe(suiteName, () => {
       users[1].publicKey,
       users[1].publicKey,
       6,
-      collateral
+      collateralMintKeypair
     );
     const lendersCollateralAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       users[1],
-      collateral.publicKey,
+      collateralMintKeypair.publicKey,
       users[1].publicKey,
       true
     );
     await mintToChecked(
       connection,
       users[1],
-      collateral.publicKey,
+      collateralMintKeypair.publicKey,
       lendersCollateralAccount.address,
       users[1],
       LAMPORTS_PER_SOL,
@@ -74,25 +76,21 @@ describe(suiteName, () => {
     const lender = users[1];
     const borrower = users[2];
 
-    const borrowedMintKeypair = generateSeededKeypair(
-      `${suiteName}+stablecoin`
-    );
-    const llammaAuthorityKey = getLlammaAuthorityKey(
-      borrowedMintKeypair.publicKey
-    );
-    const llammaKey = getLlammaKey(borrowedMintKeypair.publicKey);
+    const debtMintKeypair = generateSeededKeypair(`${suiteName}+stablecoin`);
+    const llammaAuthorityKey = getLlammaAuthorityKey(debtMintKeypair.publicKey);
+    const llammaKey = getLlammaKey(debtMintKeypair.publicKey);
     await program.methods
       .initializeLlamma()
       .accounts({
         admin: admin.publicKey,
         llamma: llammaKey,
         llammaAuthority: llammaAuthorityKey,
-        borrowedMint: borrowedMintKeypair.publicKey,
+        debtMint: debtMintKeypair.publicKey,
       })
-      .signers([borrowedMintKeypair])
+      .signers([debtMintKeypair])
       .rpc({ skipPreflight: true });
 
-    const marketKey = getMarketKey(llammaKey, collateral.publicKey);
+    const marketKey = getMarketKey(llammaKey, collateralMintKeypair.publicKey);
     await program.methods
       .createMarket()
       .accounts({
@@ -100,10 +98,33 @@ describe(suiteName, () => {
         llamma: llammaKey,
         llammaAuthority: llammaAuthorityKey,
         market: marketKey,
-        collateral: collateral.publicKey,
+        debtMint: debtMintKeypair.publicKey,
+        collateralMint: collateralMintKeypair.publicKey,
+        debtAccount: getAssociatedTokenAddressSync(
+          debtMintKeypair.publicKey,
+          llammaAuthorityKey,
+          true
+        ),
+        collateralAccount: getAssociatedTokenAddressSync(
+          collateralMintKeypair.publicKey,
+          llammaAuthorityKey,
+          true
+        ),
         priceFeed: FEEDS.SOLUSD,
       })
       .signers([admin])
+      .rpc({ skipPreflight: true });
+
+    const bandIndex = 3;
+    const bandKey = getBandKey(marketKey, bandIndex);
+    await program.methods
+      .createBand(bandIndex)
+      .accounts({
+        llamma: llammaKey,
+        llammaAuthority: llammaAuthorityKey,
+        market: marketKey,
+        band: bandKey,
+      })
       .rpc({ skipPreflight: true });
   });
 });

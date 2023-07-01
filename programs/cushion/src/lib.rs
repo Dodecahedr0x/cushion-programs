@@ -20,4 +20,8 @@ pub mod cushion {
     pub fn create_market(ctx: Context<CreateMarket>) -> Result<()> {
         instructions::create_market(ctx)
     }
+
+    pub fn create_band(ctx: Context<CreateBand>, index: u16) -> Result<()> {
+        instructions::create_band(ctx, index)
+    }
 }
