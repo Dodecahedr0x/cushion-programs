@@ -74,22 +74,22 @@ describe(suiteName, () => {
     const lender = users[1];
     const borrower = users[2];
 
-    const stablecoinMintKeypair = generateSeededKeypair(
+    const borrowedMintKeypair = generateSeededKeypair(
       `${suiteName}+stablecoin`
     );
     const llammaAuthorityKey = getLlammaAuthorityKey(
-      stablecoinMintKeypair.publicKey
+      borrowedMintKeypair.publicKey
     );
-    const llammaKey = getLlammaKey(stablecoinMintKeypair.publicKey);
+    const llammaKey = getLlammaKey(borrowedMintKeypair.publicKey);
     await program.methods
       .initializeLlamma()
       .accounts({
         admin: admin.publicKey,
         llamma: llammaKey,
         llammaAuthority: llammaAuthorityKey,
-        stablecoin: stablecoinMintKeypair.publicKey,
+        borrowedMint: borrowedMintKeypair.publicKey,
       })
-      .signers([stablecoinMintKeypair])
+      .signers([borrowedMintKeypair])
       .rpc({ skipPreflight: true });
 
     const marketKey = getMarketKey(llammaKey, collateral.publicKey);

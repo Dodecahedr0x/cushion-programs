@@ -7,15 +7,19 @@ pub struct Llamma {
     /// The admin that can create markets and receives fees
     pub admin: Pubkey,
 
-    /// The mint of the stablecoin used for loans
-    /// It will be used as the quote for all pairs
-    pub stablecoin: Pubkey,
+    /// The mint of the token used for loans
+    /// It will be used as the quote for all markets
+    pub borrowed_mint: Pubkey,
+
+    pub fee: u64,
+
+    pub admin_fee: u64,
 }
 
 impl Llamma {
     pub const LEN: usize = 8 // Discriminator
         + 32 // Admin
-        + 32; // Stablecoin
+        + 32; // Borrowed
 }
 
 #[account]

@@ -8,7 +8,7 @@ pub fn initialize_llamma(ctx: Context<InitializeLlamma>) -> Result<()> {
 
     let llamma = &mut ctx.accounts.llamma;
     llamma.admin = ctx.accounts.admin.key();
-    llamma.stablecoin = ctx.accounts.stablecoin.key();
+    llamma.borrowed_mint = ctx.accounts.borrowed_mint.key();
 
     Ok(())
 }
@@ -23,7 +23,7 @@ pub struct InitializeLlamma<'info> {
         payer = payer,
         space = Llamma::LEN,
         seeds = [
-            &stablecoin.key().as_ref()
+            &borrowed_mint.key().as_ref()
         ],
         bump
     )]
@@ -33,7 +33,7 @@ pub struct InitializeLlamma<'info> {
     #[account(
         mut,
         seeds = [
-            &stablecoin.key().as_ref(),
+            &borrowed_mint.key().as_ref(),
             AUTHORITY_SEED.as_ref()
         ],
         bump
@@ -46,7 +46,7 @@ pub struct InitializeLlamma<'info> {
         mint::authority = llamma_authority,
         mint::decimals = 8
     )]
-    pub stablecoin: Account<'info, Mint>,
+    pub borrowed_mint: Account<'info, Mint>,
 
     #[account(mut)]
     pub payer: Signer<'info>,

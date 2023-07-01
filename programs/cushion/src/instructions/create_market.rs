@@ -37,7 +37,7 @@ pub struct CreateMarket<'info> {
 
     #[account(
         seeds = [
-            llamma.stablecoin.as_ref()
+            llamma.borrowed_mint.as_ref()
         ],
         bump,
         has_one = admin @ CushionError::NotAdmin,
@@ -48,7 +48,7 @@ pub struct CreateMarket<'info> {
     #[account(
         mut,
         seeds = [
-            llamma.stablecoin.as_ref(),
+            llamma.borrowed_mint.as_ref(),
             AUTHORITY_SEED.as_ref()
         ],
         bump
