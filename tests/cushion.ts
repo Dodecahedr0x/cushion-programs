@@ -17,6 +17,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   mintToChecked,
 } from "@solana/spl-token";
+import { BN } from "bn.js";
 
 const suiteName = "cushion";
 describe(suiteName, () => {
@@ -91,8 +92,9 @@ describe(suiteName, () => {
       .rpc({ skipPreflight: true });
 
     const marketKey = getMarketKey(llammaKey, collateralMintKeypair.publicKey);
+    const basePrice = new BN(1000000);
     await program.methods
-      .createMarket()
+      .createMarket(basePrice)
       .accounts({
         admin: admin.publicKey,
         llamma: llammaKey,

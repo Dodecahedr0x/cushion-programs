@@ -30,13 +30,15 @@ pub struct Market {
     pub llamma: Pubkey,
     pub collateral_mint: Pubkey,
     pub price_feed: Pubkey,
+    pub base_price: u64,
 }
 
 impl Market {
     pub const LEN: usize = 8 // Discriminator
         + 32 // LLAMMA
         + 32 // Collateral
-        + 32; // Feed
+        + 32 // Feed
+        + 8; // Base price
 }
 
 #[account]
