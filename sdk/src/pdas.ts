@@ -29,3 +29,10 @@ export function getBandKey(market: PublicKey, index: number) {
     CUSHION_PROGRAM_ID
   )[0];
 }
+
+export function getBandDepositKey(band: PublicKey, depositor: PublicKey) {
+  return PublicKey.findProgramAddressSync(
+    [band.toBuffer(), depositor.toBuffer()],
+    CUSHION_PROGRAM_ID
+  )[0];
+}

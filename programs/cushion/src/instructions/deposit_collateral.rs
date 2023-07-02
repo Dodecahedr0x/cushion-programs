@@ -8,6 +8,7 @@ use pyth_sdk_solana::load_price_feed_from_account_info;
 use crate::{
     constants::{AUTHORITY_SEED, STALENESS_THRESHOLD},
     errors::CushionError,
+    math::BigNumber,
     state::{Band, BandDeposit, Llamma, Market},
 };
 
@@ -34,12 +35,39 @@ pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Resul
     let current_price: pyth_sdk_solana::Price = price_feed
         .get_ema_price_no_older_than(Clock::get()?.unix_timestamp, STALENESS_THRESHOLD)
         .ok_or_else(|| CushionError::OutdatedPrice)?;
+    let price_oracle = BigNumber::new(current_price.price as u64, current_price.expo.abs() as u8);
 
     // p_u = p_{base} ((A - 1) / A)^n
-    let lower_band_price = market.base_price * market.amplification.pow(band.index as u32);
+    let lower_band_price: BigNumber = BigNumber::new(market.base_price, 0).mul(
+        &BigNumber::new(market.amplification as u64 - 1, 0)
+            .pow(band.index as i16)
+            .div(&BigNumber::new(market.amplification as u64, 0).pow(band.index as i16)),
+    );
     // p_d = p_{base} ((A - 1) / A)^(n+1)
+    let upper_band_price = BigNumber::new(market.base_price, 0).mul(
+        &BigNumber::new(market.amplification as u64 - 1, 0)
+            .pow((band.index + 1) as i16)
+            .div(&BigNumber::new(market.amplification as u64, 0).pow((band.index + 1) as i16)),
+    );
     // x_d = x + y * sqrt(p_d * p)
-    let available_debt = 0;
+
+    msg!(
+        "{} {} {}",
+        market.base_price,
+        BigNumber::new(market.amplification as u64 - 1, 0)
+            .pow(band.index as i16)
+            .div(&BigNumber::new(market.amplification as u64, 0).pow(band.index as i16)),
+        BigNumber::new(market.amplification as u64 - 1, 0)
+            .pow((band.index + 1) as i16)
+            .div(&BigNumber::new(market.amplification as u64, 0).pow((band.index + 1) as i16))
+    );
+    msg!(
+        "Band@{}: [{}; {}] (Oracle price = {})",
+        band.index,
+        lower_band_price,
+        upper_band_price,
+        price_oracle
+    );
 
     let band_deposit = &mut ctx.accounts.band_deposit;
     band_deposit.depositor = ctx.accounts.depositor.key();
@@ -50,13 +78,13 @@ pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Resul
 }
 
 #[derive(Accounts)]
-#[instruction(index: u16)]
 pub struct DepositCollateral<'info> {
     #[account(
         seeds = [
             llamma.debt_mint.as_ref()
         ],
         bump,
+        has_one = debt_mint,
     )]
     pub llamma: Account<'info, Llamma>,
 
@@ -67,7 +95,7 @@ pub struct DepositCollateral<'info> {
             llamma.debt_mint.as_ref(),
             AUTHORITY_SEED.as_ref()
         ],
-        bump
+        bump,
     )]
     pub llamma_authority: AccountInfo<'info>,
 
@@ -87,13 +115,16 @@ pub struct DepositCollateral<'info> {
     pub price_feed: AccountInfo<'info>,
 
     #[account(mut)]
+    pub debt_mint: Box<Account<'info, Mint>>,
+
+    #[account(mut)]
     pub collateral_mint: Box<Account<'info, Mint>>,
 
     #[account(
         mut,
         seeds = [
             market.key().as_ref(),
-            &index.to_le_bytes(),
+            &band.index.to_le_bytes(),
         ],
         bump
     )]

@@ -6,6 +6,7 @@ import { Cushion } from "../target/types/cushion";
 import { FEEDS } from "../sdk/src";
 import { generateSeededKeypair } from "./utils";
 import {
+  getBandDepositKey,
   getBandKey,
   getLlammaAuthorityKey,
   getLlammaKey,
@@ -92,9 +93,9 @@ describe(suiteName, () => {
       .rpc({ skipPreflight: true });
 
     const marketKey = getMarketKey(llammaKey, collateralMintKeypair.publicKey);
-    const basePrice = new BN(1000000);
+    const amplification = 100;
     await program.methods
-      .createMarket(basePrice)
+      .createMarket(amplification)
       .accounts({
         admin: admin.publicKey,
         llamma: llammaKey,
@@ -127,6 +128,34 @@ describe(suiteName, () => {
         market: marketKey,
         band: bandKey,
       })
+      .rpc({ skipPreflight: true });
+
+    const bandDepositKey = getBandDepositKey(bandKey, lender.publicKey);
+    const depositAmount = new BN(1000);
+    await program.methods
+      .depositCollateral(depositAmount)
+      .accounts({
+        llamma: llammaKey,
+        llammaAuthority: llammaAuthorityKey,
+        market: marketKey,
+        priceFeed: FEEDS.SOLUSD,
+        debtMint: debtMintKeypair.publicKey,
+        collateralMint: collateralMintKeypair.publicKey,
+        band: bandKey,
+        bandDeposit: bandDepositKey,
+        depositor: lender.publicKey,
+        depositorAccount: getAssociatedTokenAddressSync(
+          collateralMintKeypair.publicKey,
+          lender.publicKey,
+          true
+        ),
+        llammaAccount: getAssociatedTokenAddressSync(
+          collateralMintKeypair.publicKey,
+          llammaAuthorityKey,
+          true
+        ),
+      })
+      .signers([lender])
       .rpc({ skipPreflight: true });
   });
 });

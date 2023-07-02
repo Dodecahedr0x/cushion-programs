@@ -30,7 +30,7 @@ pub struct Market {
     pub llamma: Pubkey,
     pub collateral_mint: Pubkey,
     pub price_feed: Pubkey,
-    pub amplification: u64,
+    pub amplification: u16,
     pub base_price: u64,
 }
 
@@ -39,7 +39,7 @@ impl Market {
         + 32 // LLAMMA
         + 32 // Collateral
         + 32 // Feed
-        + 8 // Amplification
+        + 2 // Amplification
         + 8; // Base price
 }
 

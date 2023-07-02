@@ -12,14 +12,8 @@ use crate::{
     state::{Llamma, Market},
 };
 
-pub fn create_market(ctx: Context<CreateMarket>, base_price: u64) -> Result<()> {
+pub fn create_market(ctx: Context<CreateMarket>, amplification: u16) -> Result<()> {
     msg!("Creating a new market");
-
-    let market = &mut ctx.accounts.market;
-    market.llamma = ctx.accounts.llamma.key();
-    market.collateral_mint = ctx.accounts.collateral_mint.key();
-    market.price_feed = ctx.accounts.price_feed.key();
-    market.base_price = base_price;
 
     // Checking the price feed
     let price_feed = load_price_feed_from_account_info(&ctx.accounts.price_feed.to_account_info())
@@ -27,6 +21,13 @@ pub fn create_market(ctx: Context<CreateMarket>, base_price: u64) -> Result<()> 
     let current_price: pyth_sdk_solana::Price = price_feed
         .get_ema_price_no_older_than(Clock::get()?.unix_timestamp, STALENESS_THRESHOLD)
         .ok_or_else(|| CushionError::OutdatedPrice)?;
+
+    let market = &mut ctx.accounts.market;
+    market.llamma = ctx.accounts.llamma.key();
+    market.collateral_mint = ctx.accounts.collateral_mint.key();
+    market.price_feed = ctx.accounts.price_feed.key();
+    market.amplification = amplification;
+    market.base_price = current_price.price as u64;
 
     msg!(
         "Price: ~{}",
