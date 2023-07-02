@@ -107,6 +107,50 @@ impl BigNumber {
     }
 }
 
+impl PartialOrd for BigNumber {
+    fn lt(&self, other: &Self) -> bool {
+        if self.exp > other.exp {
+            self.value < other.value * 10_u64.pow((self.exp - other.exp) as u32)
+        } else {
+            self.value * 10_u64.pow((self.exp - other.exp) as u32) < other.value
+        }
+    }
+
+    fn le(&self, other: &Self) -> bool {
+        if self.exp > other.exp {
+            self.value <= other.value * 10_u64.pow((self.exp - other.exp) as u32)
+        } else {
+            self.value * 10_u64.pow((self.exp - other.exp) as u32) <= other.value
+        }
+    }
+
+    fn gt(&self, other: &Self) -> bool {
+        if self.exp > other.exp {
+            self.value > other.value * 10_u64.pow((self.exp - other.exp) as u32)
+        } else {
+            self.value * 10_u64.pow((self.exp - other.exp) as u32) > other.value
+        }
+    }
+
+    fn ge(&self, other: &Self) -> bool {
+        if self.exp > other.exp {
+            self.value >= other.value * 10_u64.pow((self.exp - other.exp) as u32)
+        } else {
+            self.value * 10_u64.pow((self.exp - other.exp) as u32) >= other.value
+        }
+    }
+
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        if self.gt(other) {
+            Some(std::cmp::Ordering::Greater)
+        } else if self.lt(other) {
+            Some(std::cmp::Ordering::Less)
+        } else {
+            Some(std::cmp::Ordering::Equal)
+        }
+    }
+}
+
 impl Display for BigNumber {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut value_str = format!("{}", self.value);

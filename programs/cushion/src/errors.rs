@@ -10,4 +10,7 @@ pub enum CushionError {
 
     #[msg("The provided price feed is invalid")]
     InvalidPriceFeed,
+
+    #[msg("The band is being liquidated, you can't deposit here")]
+    LiquidatingBand,
 }

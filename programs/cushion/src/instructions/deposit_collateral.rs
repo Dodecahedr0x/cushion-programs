@@ -29,6 +29,7 @@ pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Resul
 
     let market = &mut ctx.accounts.market;
     let band = &mut ctx.accounts.band;
+    let decimals = ctx.accounts.debt_mint.decimals;
 
     let price_feed = load_price_feed_from_account_info(&ctx.accounts.price_feed.to_account_info())
         .map_err(|_| CushionError::InvalidPriceFeed)?;
@@ -38,29 +39,25 @@ pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Resul
     let price_oracle = BigNumber::new(current_price.price as u64, current_price.expo.abs() as u8);
 
     // p_u = p_{base} ((A - 1) / A)^n
-    let lower_band_price: BigNumber = BigNumber::new(market.base_price, 0).mul(
-        &BigNumber::new(market.amplification as u64 - 1, 0)
-            .pow(band.index as i16)
-            .div(&BigNumber::new(market.amplification as u64, 0).pow(band.index as i16)),
-    );
+    let upper_band_price = BigNumber::unit(decimals)
+        .mul(&BigNumber::new(market.amplification as u64 - 1, 0))
+        .pow(band.index as i16)
+        .div(&BigNumber::new(market.amplification as u64, 0).pow(band.index as i16))
+        .mul(&BigNumber::new(
+            market.base_price,
+            current_price.expo.abs() as u8,
+        ));
     // p_d = p_{base} ((A - 1) / A)^(n+1)
-    let upper_band_price = BigNumber::new(market.base_price, 0).mul(
-        &BigNumber::new(market.amplification as u64 - 1, 0)
-            .pow((band.index + 1) as i16)
-            .div(&BigNumber::new(market.amplification as u64, 0).pow((band.index + 1) as i16)),
-    );
+    let lower_band_price = BigNumber::unit(decimals)
+        .mul(&BigNumber::new(market.amplification as u64 - 1, 0))
+        .pow((band.index + 1) as i16)
+        .div(&BigNumber::new(market.amplification as u64, 0).pow((band.index + 1) as i16))
+        .mul(&BigNumber::new(
+            market.base_price,
+            current_price.expo.abs() as u8,
+        ));
     // x_d = x + y * sqrt(p_d * p)
 
-    msg!(
-        "{} {} {}",
-        market.base_price,
-        BigNumber::new(market.amplification as u64 - 1, 0)
-            .pow(band.index as i16)
-            .div(&BigNumber::new(market.amplification as u64, 0).pow(band.index as i16)),
-        BigNumber::new(market.amplification as u64 - 1, 0)
-            .pow((band.index + 1) as i16)
-            .div(&BigNumber::new(market.amplification as u64, 0).pow((band.index + 1) as i16))
-    );
     msg!(
         "Band@{}: [{}; {}] (Oracle price = {})",
         band.index,
@@ -68,6 +65,10 @@ pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Resul
         upper_band_price,
         price_oracle
     );
+
+    if price_oracle < lower_band_price {
+        return err!(CushionError::LiquidatingBand);
+    }
 
     let band_deposit = &mut ctx.accounts.band_deposit;
     band_deposit.depositor = ctx.accounts.depositor.key();
