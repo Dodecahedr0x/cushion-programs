@@ -6,8 +6,9 @@ use anchor_spl::{
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
 use crate::{
-    constants::AUTHORITY_SEED,
+    constants::{AUTHORITY_SEED, STALENESS_THRESHOLD},
     errors::CushionError,
+    math::BigNumber,
     state::{Llamma, Market},
 };
 
@@ -21,16 +22,19 @@ pub fn create_market(ctx: Context<CreateMarket>, base_price: u64) -> Result<()> 
     market.base_price = base_price;
 
     // Checking the price feed
-    const STALENESS_THRESHOLD: u64 = 86400; // staleness threshold in seconds
-    let price_account_info = ctx.accounts.price_feed.to_account_info();
-    let price_feed = load_price_feed_from_account_info(&price_account_info).unwrap();
-    let current_time = Clock::get()?.unix_timestamp;
+    let price_feed = load_price_feed_from_account_info(&ctx.accounts.price_feed.to_account_info())
+        .map_err(|_| CushionError::InvalidPriceFeed)?;
     let current_price: pyth_sdk_solana::Price = price_feed
-        .get_ema_price_no_older_than(current_time, STALENESS_THRESHOLD)
-        .unwrap();
-    let mut price_str = format!("{}", current_price.price);
-    price_str.insert((price_str.len() as i32 + current_price.expo) as usize, ',');
-    msg!("Price: ~{}", price_str,);
+        .get_ema_price_no_older_than(Clock::get()?.unix_timestamp, STALENESS_THRESHOLD)
+        .ok_or_else(|| CushionError::OutdatedPrice)?;
+
+    msg!(
+        "Price: ~{}",
+        BigNumber::new(
+            current_price.price.abs() as u64,
+            current_price.expo.abs() as u8
+        )
+    );
 
     Ok(())
 }

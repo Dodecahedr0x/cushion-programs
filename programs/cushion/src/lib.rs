@@ -22,7 +22,11 @@ pub mod cushion {
         instructions::create_market(ctx, base_price)
     }
 
-    pub fn create_band(ctx: Context<CreateBand>, index: u16) -> Result<()> {
+    pub fn create_band(ctx: Context<CreateBand>, index: i16) -> Result<()> {
         instructions::create_band(ctx, index)
+    }
+
+    pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Result<()> {
+        instructions::deposit_collateral(ctx, amount)
     }
 }

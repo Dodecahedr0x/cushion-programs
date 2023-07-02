@@ -6,7 +6,7 @@ use crate::{
     state::{Band, Llamma, Market},
 };
 
-pub fn create_band(ctx: Context<CreateBand>, index: u16) -> Result<()> {
+pub fn create_band(ctx: Context<CreateBand>, index: i16) -> Result<()> {
     msg!("Creating a new band");
 
     let band = &mut ctx.accounts.band;
@@ -17,7 +17,7 @@ pub fn create_band(ctx: Context<CreateBand>, index: u16) -> Result<()> {
 }
 
 #[derive(Accounts)]
-#[instruction(index: u16)]
+#[instruction(index: i16)]
 pub struct CreateBand<'info> {
     #[account(
         seeds = [

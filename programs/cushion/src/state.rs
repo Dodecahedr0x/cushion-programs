@@ -30,6 +30,7 @@ pub struct Market {
     pub llamma: Pubkey,
     pub collateral_mint: Pubkey,
     pub price_feed: Pubkey,
+    pub amplification: u64,
     pub base_price: u64,
 }
 
@@ -38,6 +39,7 @@ impl Market {
         + 32 // LLAMMA
         + 32 // Collateral
         + 32 // Feed
+        + 8 // Amplification
         + 8; // Base price
 }
 
@@ -45,11 +47,28 @@ impl Market {
 #[derive(Default)]
 pub struct Band {
     pub market: Pubkey,
-    pub index: u16,
+    pub index: i16,
 }
 
 impl Band {
     pub const LEN: usize = 8 // Discriminator
         + 32 // Market
         + 2; // Index
+}
+
+#[account]
+#[derive(Default)]
+pub struct BandDeposit {
+    pub band: Pubkey,
+    pub depositor: Pubkey,
+    pub deposited_amount: u64,
+    pub borrowed_amount: u64,
+}
+
+impl BandDeposit {
+    pub const LEN: usize = 8 // Discriminator
+        + 32 // Market
+        + 32 // Depositor
+        + 8 // Deposit
+        + 8; // Debt
 }

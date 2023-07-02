@@ -1,17 +1,24 @@
+use std::fmt::Display;
+
 use anchor_lang::prelude::*;
 
 use crate::errors::CushionError;
 
-pub fn pow(x: u64, y: u8) -> u64 {
+pub fn pow(x: u64, y: i16) -> u64 {
     let mut res = 1;
-    for i in 0..y {
+    for i in 0..y.abs() {
         res *= x;
     }
-    res
+
+    if y >= 0 {
+        res
+    } else {
+        1 / res
+    }
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
-struct BigNumber {
+pub struct BigNumber {
     pub value: u64,
     pub exp: u8,
 }
@@ -34,7 +41,7 @@ impl BigNumber {
             Err(err) => return err!(CushionError::NumberParsingFailed),
         };
         let parsed_integer = match integer.parse::<u64>() {
-            Ok(res) => res * pow(10, decimals.len() as u8) + parsed_decimals,
+            Ok(res) => res * pow(10, decimals.len() as i16) + parsed_decimals,
             Err(err) => return err!(CushionError::NumberParsingFailed),
         };
 
@@ -49,19 +56,30 @@ impl BigNumber {
         let mut b = other.clone();
 
         let self_offset = if self.exp > other.exp {
-            b.value *= pow(10, (self.exp - other.exp) as u8);
+            b.value *= pow(10, (self.exp - other.exp) as i16);
             0
         } else {
-            a.value *= pow(10, (other.exp - self.exp) as u8);
+            a.value *= pow(10, (other.exp - self.exp) as i16);
             other.exp - self.exp
         };
 
         let result = (a.value as u128) * (b.value as u128);
 
         BigNumber {
-            value: (result / pow(10, a.exp) as u128) as u64,
+            value: (result / pow(10, a.exp as i16) as u128) as u64,
             exp: a.exp - self_offset,
         }
+    }
+}
+
+impl Display for BigNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut price_str = format!("{}", self.value);
+        if self.exp > 0 {
+            price_str.insert(price_str.len() - self.exp as usize, '.');
+        }
+
+        f.write_str(price_str.as_str())
     }
 }
 
