@@ -10,7 +10,4 @@ pub enum CushionError {
 
     #[msg("The provided price feed is invalid")]
     InvalidPriceFeed,
-
-    #[msg("Parsing an invalid number")]
-    NumberParsingFailed,
 }

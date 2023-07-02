@@ -2,19 +2,13 @@ use std::fmt::Display;
 
 use anchor_lang::prelude::*;
 
-use crate::errors::CushionError;
+#[error_code]
+pub enum MathError {
+    #[msg("Exponents should be equal")]
+    ExponentsDontMatch,
 
-pub fn pow(x: u64, y: i16) -> u64 {
-    let mut res = 1;
-    for i in 0..y.abs() {
-        res *= x;
-    }
-
-    if y >= 0 {
-        res
-    } else {
-        1 / res
-    }
+    #[msg("Parsing an invalid number")]
+    NumberParsingFailed,
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -24,6 +18,13 @@ pub struct BigNumber {
 }
 
 impl BigNumber {
+    pub fn unit(exp: u8) -> Self {
+        Self {
+            value: 10_u64.pow(exp as u32),
+            exp,
+        }
+    }
+
     pub fn new(value: u64, exp: u8) -> Self {
         BigNumber { value, exp }
     }
@@ -38,11 +39,11 @@ impl BigNumber {
 
         let parsed_decimals = match decimals.parse::<u64>() {
             Ok(res) => res,
-            Err(err) => return err!(CushionError::NumberParsingFailed),
+            Err(_) => return err!(MathError::NumberParsingFailed),
         };
         let parsed_integer = match integer.parse::<u64>() {
-            Ok(res) => res * pow(10, decimals.len() as i16) + parsed_decimals,
-            Err(err) => return err!(CushionError::NumberParsingFailed),
+            Ok(res) => res * 10_u64.pow(decimals.len() as u32) + parsed_decimals,
+            Err(_) => return err!(MathError::NumberParsingFailed),
         };
 
         Ok(BigNumber {
@@ -51,35 +52,86 @@ impl BigNumber {
         })
     }
 
-    fn mul(&self, other: Self) -> Self {
+    fn mul(&self, other: &Self) -> Self {
         let mut a = self.clone();
         let mut b = other.clone();
 
         let self_offset = if self.exp > other.exp {
-            b.value *= pow(10, (self.exp - other.exp) as i16);
+            b.value *= 10_u64.pow((self.exp - other.exp) as u32);
             0
         } else {
-            a.value *= pow(10, (other.exp - self.exp) as i16);
+            a.value *= 10_u64.pow((other.exp - self.exp) as u32);
             other.exp - self.exp
         };
 
         let result = (a.value as u128) * (b.value as u128);
 
         BigNumber {
-            value: (result / pow(10, a.exp as i16) as u128) as u64,
+            value: (result / 10_u128.pow(a.exp as u32)) as u64,
             exp: a.exp - self_offset,
+        }
+    }
+
+    fn div(&self, other: &Self) -> Self {
+        let mut a = self.clone();
+        let mut b = other.clone();
+
+        let self_offset = if self.exp > other.exp {
+            b.value *= 10_u64.pow((self.exp - other.exp) as u32);
+            0
+        } else {
+            a.value *= 10_u64.pow((other.exp - self.exp) as u32);
+            other.exp - self.exp
+        };
+
+        let result =
+            10_u128.pow((a.exp + self_offset) as u32) * (a.value as u128) / (b.value as u128);
+
+        BigNumber {
+            value: result as u64,
+            exp: a.exp - self_offset,
+        }
+    }
+
+    fn pow(&self, exponent: i16) -> Self {
+        let mut res = Self::unit(self.exp);
+        for _ in 0..exponent.abs() {
+            res = res.mul(self);
+        }
+
+        if exponent >= 0 {
+            res
+        } else {
+            Self::unit(self.exp).div(&res)
         }
     }
 }
 
 impl Display for BigNumber {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut price_str = format!("{}", self.value);
-        if self.exp > 0 {
-            price_str.insert(price_str.len() - self.exp as usize, '.');
+        let mut value_str = format!("{}", self.value);
+        let add_leading_zero = value_str.len() <= self.exp as usize;
+        let has_decimal_part = self.exp > 0;
+
+        if has_decimal_part {
+            if value_str.len().to_owned() < (self.exp as usize) {
+                value_str.insert_str(
+                    0,
+                    format!(
+                        ".{}",
+                        '0'.to_string().repeat(self.exp as usize - value_str.len())
+                    )
+                    .as_str(),
+                );
+            } else {
+                value_str.insert(value_str.len() - self.exp as usize, '.')
+            };
+        }
+        if add_leading_zero {
+            value_str.insert(0, '0');
         }
 
-        f.write_str(price_str.as_str())
+        f.write_str(value_str.as_str())
     }
 }
 
@@ -91,6 +143,30 @@ mod tests {
     fn test_new() {
         assert_eq!(BigNumber::new(10, 0).value, 10);
         assert_eq!(BigNumber::new(10, 1).value, 10);
+    }
+
+    #[test]
+    fn test_unit() {
+        assert_eq!(format!("{}", BigNumber::unit(0)), "1");
+    }
+
+    #[test]
+    fn test_display() {
+        assert_eq!(format!("{}", BigNumber::new(10, 0)), "10");
+        assert_eq!(format!("{}", BigNumber::new(10, 1)), "1.0");
+        assert_eq!(format!("{}", BigNumber::new(10, 2)), "0.10");
+        assert_eq!(format!("{}", BigNumber::new(10, 3)), "0.010");
+        assert_eq!(format!("{}", BigNumber::new(10, 4)), "0.0010");
+        assert_eq!(format!("{}", BigNumber::new(10, 5)), "0.00010");
+        assert_eq!(format!("{}", BigNumber::new(10, 6)), "0.000010");
+
+        assert_eq!(format!("{}", BigNumber::new(999999, 0)), "999999");
+        assert_eq!(format!("{}", BigNumber::new(999999, 1)), "99999.9");
+        assert_eq!(format!("{}", BigNumber::new(999999, 2)), "9999.99");
+        assert_eq!(format!("{}", BigNumber::new(999999, 3)), "999.999");
+        assert_eq!(format!("{}", BigNumber::new(999999, 4)), "99.9999");
+        assert_eq!(format!("{}", BigNumber::new(999999, 5)), "9.99999");
+        assert_eq!(format!("{}", BigNumber::new(999999, 6)), "0.999999");
     }
 
     #[test]
@@ -106,6 +182,38 @@ mod tests {
         assert_eq!(
             BigNumber::new_from_string(&"99.9999".to_string()).unwrap(),
             BigNumber::new(999999, 4)
+        );
+    }
+
+    #[test]
+    fn test_mul() {
+        assert_eq!(
+            format!("{}", BigNumber::new(1000, 3).mul(&BigNumber::new(1000, 3))),
+            "1.000"
+        );
+        assert_eq!(
+            format!("{}", BigNumber::new(10000, 3).mul(&BigNumber::new(1000, 3))),
+            "10.000"
+        );
+        assert_eq!(
+            format!("{}", BigNumber::new(3000, 3).mul(&BigNumber::new(3333, 3))),
+            "9.999"
+        );
+    }
+
+    #[test]
+    fn test_div() {
+        assert_eq!(
+            format!("{}", BigNumber::new(1000, 3).div(&BigNumber::new(1000, 3))),
+            "1.000"
+        );
+        assert_eq!(
+            format!("{}", BigNumber::new(1000, 3).div(&BigNumber::new(10000, 3))),
+            "0.100"
+        );
+        assert_eq!(
+            format!("{}", BigNumber::new(10000, 3).div(&BigNumber::new(3000, 3))),
+            "3.333"
         );
     }
 }

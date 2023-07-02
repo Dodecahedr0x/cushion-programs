@@ -8,7 +8,6 @@ use pyth_sdk_solana::load_price_feed_from_account_info;
 use crate::{
     constants::{AUTHORITY_SEED, STALENESS_THRESHOLD},
     errors::CushionError,
-    math::pow,
     state::{Band, BandDeposit, Llamma, Market},
 };
 
@@ -37,7 +36,7 @@ pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Resul
         .ok_or_else(|| CushionError::OutdatedPrice)?;
 
     // p_u = p_{base} ((A - 1) / A)^n
-    let lower_band_price = market.base_price * pow(market.amplification, band.index);
+    let lower_band_price = market.base_price * market.amplification.pow(band.index as u32);
     // p_d = p_{base} ((A - 1) / A)^(n+1)
     // x_d = x + y * sqrt(p_d * p)
     let available_debt = 0;
