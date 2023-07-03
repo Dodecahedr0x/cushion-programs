@@ -1,9 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{
-    constants::AUTHORITY_SEED,
-    state::{Band, BandDeposit, Llamma, Market},
-};
+use crate::state::{Band, BandDeposit, Llamma, Market};
 
 pub fn create_band_deposit(ctx: Context<CreateBandDeposit>) -> Result<()> {
     msg!("Creating a new band deposit");

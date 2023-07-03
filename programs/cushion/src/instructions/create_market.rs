@@ -3,12 +3,12 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use fixed_point_decimal_math::BigNumber;
 use pyth_sdk_solana::load_price_feed_from_account_info;
 
 use crate::{
     constants::{AUTHORITY_SEED, STALENESS_THRESHOLD},
     errors::CushionError,
-    math::BigNumber,
     state::{Llamma, Market},
 };
 

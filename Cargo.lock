@@ -629,7 +629,9 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "fixed-point-decimal-math",
  "pyth-sdk-solana",
+ "solana-program",
  "toml_datetime",
  "winnow",
 ]
@@ -725,6 +727,15 @@ name = "feature-probe"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "835a3dc7d1ec9e75e2b5fb4ba75396837112d2060b03f7d43bc1897c7f7211da"
+
+[[package]]
+name = "fixed-point-decimal-math"
+version = "0.1.0"
+source = "git+https://github.com/Dodecahedr0x/fixed-point-decimal-math?branch=master#909aa4a7681344170dc684b5e49bc255c1c0a145"
+dependencies = [
+ "anchor-lang",
+ "solana-program",
+]
 
 [[package]]
 name = "fnv"
