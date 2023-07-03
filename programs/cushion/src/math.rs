@@ -105,6 +105,14 @@ impl BigNumber {
             Self::unit(self.exp).div(&res)
         }
     }
+
+    pub fn sqrt(&self) -> Self {
+        BigNumber {
+            value: (self.clone().to_string().parse::<f64>().unwrap().sqrt()
+                * 10_u64.pow(self.exp as u32) as f64) as u64,
+            exp: self.exp,
+        }
+    }
 }
 
 impl PartialOrd for BigNumber {
@@ -359,5 +367,22 @@ mod tests {
             ),
             "9.500000"
         );
+    }
+
+    #[test]
+    fn test_sqrt() {
+        assert_eq!(format!("{}", BigNumber::new(1000, 3).sqrt()), "1.000");
+        assert_eq!(format!("{}", BigNumber::new(4000, 3).sqrt()), "2.000");
+        assert_eq!(format!("{}", BigNumber::new(16000, 3).sqrt()), "4.000");
+
+        assert_eq!(format!("{}", BigNumber::new(10000, 4).sqrt()), "1.0000");
+        assert_eq!(format!("{}", BigNumber::new(40000, 4).sqrt()), "2.0000");
+        assert_eq!(format!("{}", BigNumber::new(160000, 4).sqrt()), "4.0000");
+
+        assert_eq!(format!("{}", BigNumber::new(100, 0).sqrt()), "10");
+        assert_eq!(format!("{}", BigNumber::new(1000000, 4).sqrt()), "10.0000");
+
+        assert_eq!(format!("{}", BigNumber::new(250000, 6).sqrt()), "0.500000");
+        assert_eq!(format!("{}", BigNumber::new(500000, 6).sqrt()), "0.707106");
     }
 }
