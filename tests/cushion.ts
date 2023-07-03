@@ -133,6 +133,18 @@ describe(suiteName, () => {
     const bandDepositKey = getBandDepositKey(bandKey, lender.publicKey);
     const depositAmount = new BN(1000);
     await program.methods
+      .createBandDeposit()
+      .accounts({
+        llamma: llammaKey,
+        market: marketKey,
+        band: bandKey,
+        bandDeposit: bandDepositKey,
+        depositor: lender.publicKey,
+      })
+      .signers([lender])
+      .rpc({ skipPreflight: true });
+
+    await program.methods
       .depositCollateral(depositAmount)
       .accounts({
         llamma: llammaKey,

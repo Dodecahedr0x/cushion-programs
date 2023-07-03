@@ -26,6 +26,10 @@ pub mod cushion {
         instructions::create_band(ctx, index)
     }
 
+    pub fn create_band_deposit(ctx: Context<CreateBandDeposit>) -> Result<()> {
+        instructions::create_band_deposit(ctx)
+    }
+
     pub fn deposit_collateral(ctx: Context<DepositCollateral>, amount: u64) -> Result<()> {
         instructions::deposit_collateral(ctx, amount)
     }

@@ -132,9 +132,7 @@ pub struct DepositCollateral<'info> {
     pub band: Account<'info, Band>,
 
     #[account(
-        init_if_needed,
-        payer = payer,
-        space = BandDeposit::LEN,
+        mut,
         seeds = [
             band.key().as_ref(),
             &depositor.key().as_ref(),
