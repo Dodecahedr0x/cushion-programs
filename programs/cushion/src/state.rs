@@ -48,12 +48,16 @@ impl Market {
 pub struct Band {
     pub market: Pubkey,
     pub index: i16,
+    pub debt_amount: u64,
+    pub collateral_amount: u64,
 }
 
 impl Band {
     pub const LEN: usize = 8 // Discriminator
         + 32 // Market
-        + 2; // Index
+        + 2 // Index
+        + 8 // Debt
+        + 8; // Collateral
 }
 
 #[account]

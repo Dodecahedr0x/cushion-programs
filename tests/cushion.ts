@@ -127,7 +127,22 @@ describe(suiteName, () => {
         llammaAuthority: llammaAuthorityKey,
         market: marketKey,
         band: bandKey,
+        priceFeed: FEEDS.SOLUSD,
+        debtMint: debtMintKeypair.publicKey,
+        collateralMint: collateralMintKeypair.publicKey,
+        creator: lender.publicKey,
+        creatorAccount: getAssociatedTokenAddressSync(
+          collateralMintKeypair.publicKey,
+          lender.publicKey,
+          true
+        ),
+        llammaAccount: getAssociatedTokenAddressSync(
+          collateralMintKeypair.publicKey,
+          llammaAuthorityKey,
+          true
+        ),
       })
+      .signers([lender])
       .rpc({ skipPreflight: true });
 
     const bandDepositKey = getBandDepositKey(bandKey, lender.publicKey);

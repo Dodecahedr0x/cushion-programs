@@ -11,6 +11,9 @@ pub enum CushionError {
     #[msg("The provided price feed is invalid")]
     InvalidPriceFeed,
 
+    #[msg("The oracle price is too low to create this band")]
+    PriceTooLowForCreation,
+
     #[msg("The band is being liquidated, you can't deposit here")]
     LiquidatingBand,
 }
